@@ -14,5 +14,5 @@ Registradas ao longo do design. Resolver e mover para os contratos/ADRs correspo
 | 8 | **Storage de objetos**: Cloudflare R2 vs S3. | ⏳ Aberta | — |
 | 9 | **Nome final do app** ("Amigos do Bolão" a confirmar). | ⏳ Aberta | — |
 | 10 | **Versão do Nuxt**: briefing pede Nuxt 3; tooling atual já default p/ Nuxt 4. Scaffold feito em **Nuxt 3** — confirmar se mantém. | ⏳ Aberta | Scaffold = Nuxt 3 |
-| 11 | **Hash de senha**: bcrypt vs argon2. | ⏳ Aberta | — |
+| 11 | **Hash de senha**: bcrypt vs argon2. | ✅ Resolvida | **bcryptjs** (JS puro, 10 rounds) — sem compilação nativa, mantém a imagem Docker `node:slim` enxuta |
 | 12 | **Regra de bloqueio de palpite** por `MatchStatus` (até kickoff? até LIVE?). | ⏳ Aberta | — |
