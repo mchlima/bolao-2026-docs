@@ -56,6 +56,25 @@ User 1──* Prediction *──1 Match *──1 Tournament
 User 1──* AuditLog
 ```
 
+## Constraints únicas (para seed idempotente)
+
+- `Team.countryCode` é `@unique` (sparse — `NULL` permitido para clubes). Permite upsert de
+  seleções por `countryCode`.
+- `Stadium @@unique([name, city])`. Permite upsert de estádios por nome+cidade.
+
+## Seed (`prisma/seed.ts` + `prisma db seed`)
+
+Idempotente (upsert). Popula:
+- **Admin inicial** — `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`/`SEED_ADMIN_NAME` (default
+  `admin@bolao2026.local` / `admin12345` — **trocar**). Re-seed **não** reseta a senha existente.
+- **211 seleções FIFA** (`prisma/data/national-teams.ts`) — `name` (pt-BR), `shortName`
+  (tri-código FIFA), `countryCode` (ISO 3166-1 alpha-2; `GB-ENG/SCT/WLS/NIR` p/ Reino Unido),
+  `continent` (agrupamento por confederação, em inglês).
+- **16 estádios da Copa 2026** (`prisma/data/wc2026-stadiums.ts`) — EUA (11), Canadá (2), México (3).
+
+> Convenção dos dados de seleção: `name` em pt-BR (conteúdo exibido); `shortName`/`countryCode`/
+> `continent` neutros. Kazaquistão fica em UEFA (mudou da AFC em 2002).
+
 ## Convenção Prisma + Supabase
 
 Dual-URL obrigatório (ver `deploy/`):
