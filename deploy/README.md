@@ -1,5 +1,8 @@
 # Deploy — Bolão 2026
 
+> **Passo a passo do VPS:** [`vps-ubuntu.md`](./vps-ubuntu.md) (Ubuntu 24.04, deploy key,
+> Cloudflare Flexible) + [`bootstrap.sh`](./bootstrap.sh) para as fases 1–2.
+
 ## Visão geral
 
 | Componente | Onde | Como |
