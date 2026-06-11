@@ -11,24 +11,27 @@ final** da `Match`. Retorna **apenas o tier mais alto atingido** — em **camada
 
 | # | Tier (`ScoreTier`) | Condição | Pontos |
 |---|---|---|---|
-| 1 | `EXACT` | Cravou o placar exato (home e away corretos) | **TBD** |
-| 2 | `ONE_TEAM_SCORE` | Acertou os gols de **um** dos times (home OU away) | **TBD** |
-| 3 | `OUTCOME` | Acertou o vencedor (ou o empate) | **TBD** |
-| 4 | `GOAL_DIFF` | Acertou a diferença de gols | **TBD** |
+| 1 | `EXACT` | Cravou o placar exato (home e away corretos) | **10** |
+| 2 | `ONE_TEAM_SCORE` | Acertou os gols de **um** dos times (home OU away) | **5** |
+| 3 | `GOAL_DIFF` | Acertou o saldo de gols (⇒ mesmo resultado), sem cravar | **4** |
+| 4 | `OUTCOME` | Acertou só o vencedor (ou o empate), saldo errado | **3** |
 | 5 | `NONE` | Nada | **0** |
 
 Retorna o **primeiro** tier satisfeito nesta ordem (o mais alto). Não soma camadas.
 
-> Os **valores numéricos** de cada tier estão em [`../DECISIONS.md`](../DECISIONS.md) (a definir;
-> parametrizável é desejável).
+> **Decisão #1 (resolvida):** valores acima. Ordem por **especificidade** — `GOAL_DIFF` fica
+> **acima** de `OUTCOME` para ser alcançável (saldo exato implica mesmo vencedor). Os valores são
+> **parametrizáveis** via env `SCORING_EXACT`/`SCORING_ONE_TEAM_SCORE`/`SCORING_GOAL_DIFF`/
+> `SCORING_OUTCOME`. Implementado e testado em `ScoringService` (`scoring.service.spec.ts`).
 
 ## Regras adicionais
 
 - Partida `CANCELLED` → **não gera pontos** (ignorada em todos os rankings).
 - Pontuação só é definitiva quando a partida está `FINISHED`. Em `LIVE`, o cálculo é **provisório**
   usando o placar parcial atual.
-- Palpite é único por `(user, match)` e bloqueado conforme `MatchStatus` (não aceitar/alterar após
-  o kickoff — regra de bloqueio a definir no produto).
+- **Bloqueio do palpite (decisão #12, resolvida):** aceita criar/alterar só enquanto
+  `status === SCHEDULED` **E** `now < kickoffAt` **E** os dois times estão definidos. Caso
+  contrário: `PREDICTION_LOCKED` (já começou/encerrou) ou `MATCH_NOT_OPEN` (time ainda TBD).
 
 ## Pseudocódigo (referência — implementação real no `ScoringService`)
 
@@ -37,14 +40,13 @@ function scoreTier(pred: {home: number; away: number},
                    result: {home: number; away: number}): ScoreTier {
   if (pred.home === result.home && pred.away === result.away) return 'EXACT';
   if (pred.home === result.home || pred.away === result.away) return 'ONE_TEAM_SCORE';
-  if (sign(pred.home - pred.away) === sign(result.home - result.away)) return 'OUTCOME';
   if ((pred.home - pred.away) === (result.home - result.away)) return 'GOAL_DIFF';
+  if (Math.sign(pred.home - pred.away) === Math.sign(result.home - result.away)) return 'OUTCOME';
   return 'NONE';
 }
 // pontos = TIER_VALUES[scoreTier(...)]
 ```
 
-> Nota: `OUTCOME` (mesmo sinal da diferença) já cobre empate (sign 0). `GOAL_DIFF` cobre o caso
-> raro de mesma diferença mas vencedor oposto — impossível salvo empate, então na prática o tier 4
-> só é atingido quando o sinal difere mas a magnitude da diferença coincide. **Validar a ordem e
-> semântica exatas com o produto antes de fixar os valores.**
+> `GOAL_DIFF` (saldo exato) vem **antes** de `OUTCOME` (mesmo sinal): saldo exato ⇒ mesmo
+> vencedor, então precisa ser testado primeiro para ser alcançável. Empate exato cai em `EXACT`
+> ou `GOAL_DIFF`. Coberto por testes em `scoring.service.spec.ts`.
