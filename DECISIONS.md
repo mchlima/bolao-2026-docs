@@ -11,7 +11,7 @@ Registradas ao longo do design. Resolver e mover para os contratos/ADRs correspo
 | 5 | **Pódio no ranking da partida**: condicionar a um nº mínimo de participantes (evitar "pódio" com poucos palpites). | ⏳ Aberta | — |
 | 6 | **Política de uso de escudos de clubes** (marca/IP). Fora do escopo técnico; registrar. | ⏳ Aberta | — |
 | 7 | **Conjunto final de `TournamentStatus`** (além de `DRAFT`). | ⏳ Aberta | — |
-| 8 | **Storage de objetos**: Cloudflare R2 vs S3. | ⏳ Aberta | — |
+| 8 | **Storage de objetos**: Cloudflare R2 vs S3. | ✅ Resolvida | **Cloudflare R2** (S3-compatible). Backend gera URLs e otimiza imagens (`sharp`→WebP). Vars `STORAGE_*` no `.env`. |
 | 9 | **Nome final do app** ("Amigos do Bolão" a confirmar). | ⏳ Aberta | — |
 | 10 | **Versão do Nuxt**: briefing pede Nuxt 3; tooling atual já default p/ Nuxt 4. Scaffold feito em **Nuxt 3** — confirmar se mantém. | ⏳ Aberta | Scaffold = Nuxt 3 |
 | 11 | **Hash de senha**: bcrypt vs argon2. | ✅ Resolvida | **bcryptjs** (JS puro, 10 rounds) — sem compilação nativa, mantém a imagem Docker `node:slim` enxuta |
