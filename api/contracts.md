@@ -129,14 +129,23 @@ GET    /api/matches/:id/score                # leve, para polling
 POST   /api/predictions                      # upsert por (user, match), bloqueia por status
 GET    /api/predictions/me
 
-# Admin (role=ADMIN)
+# Admin (role=ADMIN — JwtAuthGuard + RolesGuard)
+GET    /api/admin/dashboard                   # contagens (users/tournaments/teams/stadiums/matches por status/predictions)
 CRUD   /api/admin/tournaments
 CRUD   /api/admin/teams
 CRUD   /api/admin/stadiums
-CRUD   /api/admin/matches
-PATCH  /api/admin/matches/:id/score          # incremento de placar (LIVE)
-PATCH  /api/admin/matches/:id/status
-GET    /api/admin/matches/:id/engagement     # distribuição de palpites
-CRUD   /api/admin/users                       # ativar/desativar, promover, gerar nova senha
-GET    /api/admin/audit-log
+CRUD   /api/admin/matches                     # PATCH /:id altera placar/status (controle ao vivo, auditado)
+GET    /api/admin/matches/:id/engagement      # distribuição de palpites
+GET    /api/admin/users                       # listar (paginação, busca, filtros role/isActive)
+PATCH  /api/admin/users/:id/role              # promover/rebaixar (auditado; não pode rebaixar a si mesmo)
+PATCH  /api/admin/users/:id/active            # ativar/desativar (auditado; não pode desativar a si mesmo)
+POST   /api/admin/users/:id/reset-password    # gera senha temporária (retorna 1x; ver DECISIONS #4)
+GET    /api/admin/audit-log                   # log imutável (paginação, filtros entityType/action)
 ```
+
+## Audit log
+
+Append-only (sem update/delete exposto). Ações registradas com ator + diff de campos:
+`USER_SET_ROLE`, `USER_SET_ACTIVE`, `USER_RESET_PASSWORD` (sem a senha), `MATCH_UPDATE`
+(`status`/`homeScore`/`awayScore`). Cada entrada: `actorType`, `actor` (id/nome/email),
+`action`, `entityType`, `entityId`, `diff: { campo: { before, after } }`, `createdAt`.
