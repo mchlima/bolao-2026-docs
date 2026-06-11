@@ -8,7 +8,7 @@ Registradas ao longo do design. Resolver e mover para os contratos/ADRs correspo
 | 2 | **Estilo de paginação por tela**: offset+total (admin) vs cursor (feeds). | ⏳ Aberta | Esboço em `api/contracts.md` |
 | 3 | **Intervalo de polling** das telas LIVE (placar + ranking provisório). | ⏳ Aberta | — |
 | 4 | **"Gerar nova senha"**: exibir senha temporária **ou** disparar fluxo de redefinição. | 🟡 Parcial | MVP: **gera senha temporária** retornada 1x ao admin (sem serviço de e-mail ainda). Senha **não** vai para o audit log. Migrar p/ fluxo de reset-link quando houver e-mail. |
-| 5 | **Pódio no ranking da partida**: condicionar a um nº mínimo de participantes (evitar "pódio" com poucos palpites). | ⏳ Aberta | — |
+| 5 | **Pódio no ranking**: condicionar a um nº mínimo de participantes. | ✅ Resolvida | Pódio só aparece com **≥ 3 participantes** (ranking do torneio e da partida); abaixo disso, lista simples. |
 | 6 | **Política de uso de escudos de clubes** (marca/IP). Fora do escopo técnico; registrar. | ⏳ Aberta | — |
 | 7 | **Conjunto final de `TournamentStatus`** (além de `DRAFT`). | ⏳ Aberta | — |
 | 8 | **Storage de objetos**: Cloudflare R2 vs S3. | ✅ Resolvida | **Cloudflare R2** (S3-compatible). Backend gera URLs e otimiza imagens (`sharp`→WebP). Vars `STORAGE_*` no `.env`. |
