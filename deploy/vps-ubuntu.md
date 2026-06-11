@@ -14,13 +14,17 @@ Os comandos assumem login inicial como `root`. Em usuário comum, prefixe com `s
 
 ## Fase 1–2 — Bootstrap (segurança, swap, Docker, Nginx)
 
-Automatizado em [`bootstrap.sh`](./bootstrap.sh) (idempotente, pode reexecutar):
+Automatizado em [`bootstrap.sh`](./bootstrap.sh) (idempotente, pode reexecutar).
+O repo de docs é **privado**, então envie o script por `scp` (do seu workstation):
 
 ```bash
-# no VPS
-curl -fsSLO https://raw.githubusercontent.com/mchlima/bolao-2026-docs/main/deploy/bootstrap.sh
-# (ou scp do seu local) — então:
-bash bootstrap.sh
+scp bolao-2026-docs/deploy/bootstrap.sh root@SEU_IP_VPS:/root/bootstrap.sh
+```
+
+E no VPS:
+
+```bash
+bash /root/bootstrap.sh
 ```
 
 O script faz: `ufw` (22/80/443), swap de 2GB, Docker + plugin Compose, e Nginx.
