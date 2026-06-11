@@ -67,12 +67,39 @@ Request: `?cursor=<opaque>&limit=20`
 
 ## Rankings
 
-- **Ranking do torneio:** soma de pontos no torneio; **top 100** + **posição do usuário logado**
-  mesmo fora do top 100 (linha sticky).
-- **Ranking da partida:** pontos naquela partida; durante `LIVE` é **provisório** (recalcula com
-  o placar); top 100 + posição do usuário.
-- **Engajamento (admin):** total de palpites por partida + **distribuição por placar palpitado**
-  (`GROUP BY home_score, away_score` com percentuais).
+Todos consomem o **mesmo `ScoringService`**. Endpoints de ranking são **públicos com auth opcional**
+(`OptionalJwtAuthGuard`): com token, a resposta inclui `currentUser` (posição do logado, mesmo fora
+do top 100). Ordenação: pontos desc → nº de cravadas desc → nome; **empates compartilham `rank`**.
+
+- **`GET /api/tournaments/:id/ranking`** — soma de pontos no torneio (conta `LIVE`+`FINISHED`,
+  ignora `CANCELLED`); **top 100**.
+- **`GET /api/matches/:id/ranking`** — pontos naquela partida; `provisional: true` durante `LIVE`.
+
+```json
+{
+  "entries": [
+    { "rank": 1, "user": { "id": "…", "name": "…" }, "points": 15, "exactCount": 1, "scoredCount": 2 }
+  ],
+  "currentUser": { "rank": 42, "user": {…}, "points": 7, "exactCount": 0, "scoredCount": 3 },
+  "totalParticipants": 137,
+  "provisional": true,            // só no ranking de partida
+  "result": { "home": 2, "away": 1 } // só no ranking de partida (null se sem placar)
+}
+```
+
+- **`GET /api/admin/matches/:id/engagement`** (admin) — total + **distribuição por placar**
+  (`GROUP BY home_score, away_score`), ordenada por contagem desc, com `percentage` (0–100, 1 casa).
+
+```json
+{
+  "matchId": "…",
+  "totalPredictions": 3,
+  "distribution": [ { "homeScore": 3, "awayScore": 0, "count": 1, "percentage": 33.3 } ]
+}
+```
+
+> Cálculo on-the-fly consumindo o `ScoringService` (sem materialização nesta fase — otimização
+> futura via tabela de pontos por usuário/torneio, ver `database/schema.md`).
 
 ## Polling (telas LIVE, sem WebSocket)
 
