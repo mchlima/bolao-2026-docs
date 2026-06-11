@@ -6,7 +6,7 @@ Registradas ao longo do design. Resolver e mover para os contratos/ADRs correspo
 |---|---|---|---|
 | 1 | **Valores numéricos** de cada tier de pontuação. | ✅ Resolvida | `EXACT`=10, `ONE_TEAM_SCORE`=5, `GOAL_DIFF`=4, `OUTCOME`=3, `NONE`=0 (saldo acima de vencedor). Parametrizável via env `SCORING_*`. Ver `api/scoring.md` |
 | 2 | **Estilo de paginação por tela**: offset+total (admin) vs cursor (feeds). | ⏳ Aberta | Esboço em `api/contracts.md` |
-| 3 | **Intervalo de polling** das telas LIVE (placar + ranking provisório). | ⏳ Aberta | — |
+| 3 | **Intervalo de polling** das telas LIVE (placar + ranking provisório). | ✅ Resolvida | **15s** (`LIVE_POLL_MS`), só enquanto há partida `LIVE` e a aba está visível. Telas: detalhe da partida e página do torneio. |
 | 4 | **"Gerar nova senha"**: exibir senha temporária **ou** disparar fluxo de redefinição. | 🟡 Parcial | MVP: **gera senha temporária** retornada 1x ao admin (sem serviço de e-mail ainda). Senha **não** vai para o audit log. Migrar p/ fluxo de reset-link quando houver e-mail. |
 | 5 | **Pódio no ranking**: condicionar a um nº mínimo de participantes. | ✅ Resolvida | Pódio só aparece com **≥ 3 participantes** (ranking do torneio e da partida); abaixo disso, lista simples. |
 | 6 | **Política de uso de escudos de clubes** (marca/IP). Fora do escopo técnico; registrar. | ⏳ Aberta | — |
@@ -17,4 +17,4 @@ Registradas ao longo do design. Resolver e mover para os contratos/ADRs correspo
 | 11 | **Hash de senha**: bcrypt vs argon2. | ✅ Resolvida | **bcryptjs** (JS puro, 10 rounds) — sem compilação nativa, mantém a imagem Docker `node:slim` enxuta |
 | 12 | **Regra de bloqueio de palpite** por `MatchStatus` (até kickoff? até LIVE?). | ✅ Resolvida | Trava no **início da partida**: aceita só se `SCHEDULED` E `now < kickoffAt` E ambos os times definidos. Códigos `PREDICTION_LOCKED` / `MATCH_NOT_OPEN` |
 | 13 | **Times da partida nullable** (briefing assumia obrigatório). Necessário p/ mata-mata "a definir". | ✅ Resolvida | `homeTeamId`/`awayTeamId` nullable + `homeSourceLabel`/`awaySourceLabel` (slot TBD). Palpite só liberado quando os dois times estão definidos. |
-| 14 | **Horários de kickoff da Copa** (grupos derivados/fuso; mata-mata placeholder). | ⏳ Aberta | Revisar contra FIFA antes do go-live |
+| 14 | **Horários de kickoff da Copa** (grupos derivados/fuso; mata-mata placeholder). | 🟡 Parcial | Aplicado **+1h** em todos (estavam 1h adiantados, confirmado pelo usuário). UTC no banco; exibição no **fuso da conta** (`User.timezone`, default `America/Sao_Paulo`). Ainda best-effort — admin pode ajustar por partida. |
