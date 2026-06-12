@@ -153,9 +153,12 @@ Criar um "bolão padrão" para os 7 amigos é **opcional** (eles podem criar pel
 > E2E contra o Supabase real (dados de teste limpos, baseline intacto); migração aditiva JÁ aplicada no
 > banco compartilhado (`20260612151713_add_pools_platform`). Frontend typecheck `vue-tsc` limpo (build de
 > prod via Vercel). Commits: api `5e79438`(F1)+`a421ce8`(F2); web `7d7a9e3`(F3); docs `feat/pools`.
-> **Ainda NÃO deployado.** Pendências p/ F4: (1) deep-link de convite p/ usuário **deslogado** (hoje o
-> guard manda pra landing e perde o código → login com return-to); (2) verificação visual no browser;
-> (3) ranking de partida escopado na UI (endpoint pronto).
+> **Ainda NÃO deployado.** Validação visual feita pelo usuário (2026-06-12) → refinamentos aplicados
+> (web `5cee92f`, api `24d25fe`): deep-link de convite p/ **deslogado** agora vai p/ login/cadastro e
+> volta ao convite (`?redirect=`); "entrar por código" **removido** (só link); convites **removíveis**
+> (`DELETE .../invites/:id`); estado de "bolão indisponível" decente (404 vs 403). **Pendente de design
+> (F4): mostrar os palpites de cada membro POR JOGO no bolão** — respeitando a trava de privacidade (não
+> revela palpite antes do apito). Endpoint `/pools/:id/matches/:matchId/ranking` já entrega o dado.
 
 | Fase | Escopo | Tamanho | Status |
 |------|--------|---------|--------|
