@@ -156,9 +156,12 @@ Criar um "bolão padrão" para os 7 amigos é **opcional** (eles podem criar pel
 > **Ainda NÃO deployado.** Validação visual feita pelo usuário (2026-06-12) → refinamentos aplicados
 > (web `5cee92f`, api `24d25fe`): deep-link de convite p/ **deslogado** agora vai p/ login/cadastro e
 > volta ao convite (`?redirect=`); "entrar por código" **removido** (só link); convites **removíveis**
-> (`DELETE .../invites/:id`); estado de "bolão indisponível" decente (404 vs 403). **Pendente de design
-> (F4): mostrar os palpites de cada membro POR JOGO no bolão** — respeitando a trava de privacidade (não
-> revela palpite antes do apito). Endpoint `/pools/:id/matches/:matchId/ranking` já entrega o dado.
+> (`DELETE .../invites/:id`); estado de "bolão indisponível" decente (404 vs 403). **Palpites por jogo
+> de cada membro FEITO** (aba "Jogos"; api `efb3444`, web `6ed98ab`): novo `GET /pools/:id/matches/
+> :matchId/predictions` com **trava de privacidade NO BACKEND** — antes do apito só retorna o palpite do
+> próprio solicitante (`revealed:false`), liberando os demais após o início; verificado por smoke.
+> **Milestone feature-completo; falta só o DEPLOY** (merge `feat/pools`→`main` nos 3 repos → API no VPS
+> + web na Vercel; migração já no banco).
 
 | Fase | Escopo | Tamanho | Status |
 |------|--------|---------|--------|
