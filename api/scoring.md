@@ -11,15 +11,24 @@ crescem com a proximidade de cada placar.
 ## Fórmula
 
 ```
-errou o vencedor (sinal do saldo diferente)  → 0
+errou o vencedor (sinal do saldo diferente):
+  cravou os gols de um time → TEAM_EXACT_MISS  (consolação fora do portão)
+  senão                     → 0
 acertou o vencedor/empate                    → BASE
   + por time:  gols exatos → TEAM_EXACT
                errou por 1 → TEAM_NEAR
                senão       → 0
 ```
 
-Padrões (parametrizáveis via env): **BASE = 4**, **TEAM_EXACT = 3**, **TEAM_NEAR = 1**
-(`SCORING_BASE` / `SCORING_TEAM_EXACT` / `SCORING_TEAM_NEAR`). Com eles, cravar o placar = **10**.
+Padrões (parametrizáveis via env): **BASE = 4**, **TEAM_EXACT = 3**, **TEAM_NEAR = 1**,
+**TEAM_EXACT_MISS = 1** (`SCORING_BASE` / `SCORING_TEAM_EXACT` / `SCORING_TEAM_NEAR` /
+`SCORING_TEAM_EXACT_MISS`). Com eles, cravar o placar = **10**.
+
+**Consolação (Decisão #18, 2026-06-12):** errar o vencedor mas **cravar o número de gols de um
+time** rende **1 ponto** — só o número *exato* conta (errar por 1 fora do portão = 0). Fica
+**estritamente abaixo da BASE**, então acertar o vencedor sempre vale mais do que a consolação.
+Como cravar os dois times = placar exato (= acertar o vencedor), fora do portão no máximo um time
+casa.
 
 ### Faixas e rótulo (`tier`, p/ UI)
 
@@ -29,12 +38,13 @@ Padrões (parametrizáveis via env): **BASE = 4**, **TEAM_EXACT = 3**, **TEAM_NE
 | `ONE_TEAM_SCORE` | Acertou um placar | vencedor certo + cravou os gols de um time | **7–8** |
 | `CLOSE` | Quase | vencedor certo, nenhum time cravado, cada um errou por ≤1 | **6** |
 | `OUTCOME` | Acertou o vencedor | vencedor certo, placar mais distante | **4–5** |
-| `NONE` | Não pontuou | errou o vencedor | **0** |
+| `TEAM_GOALS` | Gols de um time | **errou o vencedor**, mas cravou os gols de um time | **1** |
+| `NONE` | Não pontuou | errou o vencedor e não cravou nenhum time | **0** |
 
 O `tier` é só um **rótulo** derivado dos mesmos fatos; os pontos vêm da fórmula acima.
 
 Exemplos (resultado **2 × 1**): `2-1`→10 · `2-0`→8 · `3-1`→8 · `3-2`→6 · `1-0`→6 ·
-`5-0`→5 · `5-3`→4 · `0-0`→0 · `1-2`→0.
+`5-0`→5 · `5-3`→4 · `2-3`→1 · `0-0`→0 · `1-2`→0.
 
 ## Desempate
 
@@ -59,7 +69,8 @@ desempate resolve.
 ```ts
 function tierFor(pred, result): ScoreTier {
   if (pred.home === result.home && pred.away === result.away) return 'EXACT';
-  if (Math.sign(pred.home - pred.away) !== Math.sign(result.home - result.away)) return 'NONE';
+  if (Math.sign(pred.home - pred.away) !== Math.sign(result.home - result.away))
+    return (pred.home === result.home || pred.away === result.away) ? 'TEAM_GOALS' : 'NONE';
   const dh = Math.abs(pred.home - result.home), da = Math.abs(pred.away - result.away);
   if (dh === 0 || da === 0) return 'ONE_TEAM_SCORE';
   if (dh <= 1 && da <= 1) return 'CLOSE';
@@ -69,6 +80,10 @@ function tierFor(pred, result): ScoreTier {
 function score(pred, result) {
   const tier = tierFor(pred, result);
   if (tier === 'NONE') return { tier, points: 0 };
+  if (tier === 'TEAM_GOALS') {                       // errou o vencedor, cravou um time
+    const exacts = (pred.home === result.home) + (pred.away === result.away);
+    return { tier, points: exacts * TEAM_EXACT_MISS };
+  }
   const per = (d) => d === 0 ? TEAM_EXACT : d === 1 ? TEAM_NEAR : 0;
   return { tier, points: BASE + per(|pred.home-result.home|) + per(|pred.away-result.away|) };
 }
