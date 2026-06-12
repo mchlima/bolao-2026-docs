@@ -149,16 +149,19 @@ Criar um "bolão padrão" para os 7 amigos é **opcional** (eles podem criar pel
 
 ## Fases (check-in entre cada uma)
 
-> **Andamento (2026-06-12, branch `feat/pools`):** F1 ✅ e F2 ✅ feitas e verificadas E2E contra o
-> Supabase real (dados de teste limpos, baseline intacto). Migração aditiva JÁ aplicada no banco
-> compartilhado (`20260612151713_add_pools_platform`). API repo commits `5e79438` (F1) + `a421ce8` (F2),
-> docs `feat/pools`. **Ainda NÃO deployado** (aguarda o frontend). Próximo: F3.
+> **Andamento (2026-06-12, branch `feat/pools` nos 3 repos):** F1 ✅, F2 ✅ e F3 ✅. Backend verificado
+> E2E contra o Supabase real (dados de teste limpos, baseline intacto); migração aditiva JÁ aplicada no
+> banco compartilhado (`20260612151713_add_pools_platform`). Frontend typecheck `vue-tsc` limpo (build de
+> prod via Vercel). Commits: api `5e79438`(F1)+`a421ce8`(F2); web `7d7a9e3`(F3); docs `feat/pools`.
+> **Ainda NÃO deployado.** Pendências p/ F4: (1) deep-link de convite p/ usuário **deslogado** (hoje o
+> guard manda pra landing e perde o código → login com return-to); (2) verificação visual no browser;
+> (3) ranking de partida escopado na UI (endpoint pronto).
 
 | Fase | Escopo | Tamanho | Status |
 |------|--------|---------|--------|
 | **F1 — Modelo + migração** | Schema (`Pool`/`PoolMember`/`PoolInvite` + enums) — `Prediction` intacto. Migração **aditiva** (cria 3 tabelas, não toca palpites). Geração de `code` de convite. Verificar contra o Supabase real, limpar dados de teste. | S | ✅ |
 | **F2 — Backend escopado** | `PoolModule`: CRUD do bolão, **links de convite nomeados** (criar/listar/revogar), entrar por `code`, listar "meus bolões", gestão de membros (**promover/rebaixar admin, expulsar**) com a matriz de papéis. `RankingsService` aceita filtro de membros (via `poolId`). Guards por papel. `PredictionsService` intacto. | M | ✅ |
-| **F3 — Frontend** | "Meus bolões" vira a home/seção. Criar bolão / entrar por link / **gerir links nomeados** + **membros (promover/expulsar)**. Página do bolão = **ranking escopado aos membros** (partida + torneio); o palpitar **continua na página do torneio** (global). Roteamento `/b/:id`, join `/b/join/:code`. | M | ⏳ |
+| **F3 — Frontend** | "Meus bolões" vira a home/seção. Criar bolão / entrar por link / **gerir links nomeados** + **membros (promover/expulsar)**. Página do bolão = **ranking escopado aos membros** (partida + torneio); o palpitar **continua na página do torneio** (global). Roteamento `/b/:id`, join `/b/join/:code`. | M | ✅ |
 | **F4 — Tempo real + polimento** | Ranking do bolão reativo via SSE (reusa as salas do torneio, filtra membros no cliente/servidor), vazios/erros, polimento. | S | ⏳ |
 
 ### Endpoints da API (F2, todos sob `/api/pools`, exigem login)
