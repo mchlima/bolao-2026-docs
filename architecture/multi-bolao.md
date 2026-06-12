@@ -149,12 +149,38 @@ Criar um "bolão padrão" para os 7 amigos é **opcional** (eles podem criar pel
 
 ## Fases (check-in entre cada uma)
 
-| Fase | Escopo | Tamanho |
-|------|--------|---------|
-| **F1 — Modelo + migração** | Schema (`Pool`/`PoolMember`/`PoolInvite` + enums) — `Prediction` intacto. Migração **aditiva** (cria 3 tabelas, não toca palpites). Geração de `code` de convite. Verificar contra o Supabase real, limpar dados de teste. | S |
-| **F2 — Backend escopado** | `PoolModule`: CRUD do bolão, **links de convite nomeados** (criar/listar/revogar), entrar por `code`, listar "meus bolões", gestão de membros (**promover/rebaixar admin, expulsar**) com a matriz de papéis. `RankingsService` aceita filtro de membros (via `poolId`). Guards por papel. `PredictionsService` intacto. | M |
-| **F3 — Frontend** | "Meus bolões" vira a home/seção. Criar bolão / entrar por link / **gerir links nomeados** + **membros (promover/expulsar)**. Página do bolão = **ranking escopado aos membros** (partida + torneio); o palpitar **continua na página do torneio** (global). Roteamento `/b/:id`, join `/b/join/:code`. | M |
-| **F4 — Tempo real + polimento** | Ranking do bolão reativo via SSE (reusa as salas do torneio, filtra membros no cliente/servidor), vazios/erros, polimento. | S |
+> **Andamento (2026-06-12, branch `feat/pools`):** F1 ✅ e F2 ✅ feitas e verificadas E2E contra o
+> Supabase real (dados de teste limpos, baseline intacto). Migração aditiva JÁ aplicada no banco
+> compartilhado (`20260612151713_add_pools_platform`). API repo commits `5e79438` (F1) + `a421ce8` (F2),
+> docs `feat/pools`. **Ainda NÃO deployado** (aguarda o frontend). Próximo: F3.
+
+| Fase | Escopo | Tamanho | Status |
+|------|--------|---------|--------|
+| **F1 — Modelo + migração** | Schema (`Pool`/`PoolMember`/`PoolInvite` + enums) — `Prediction` intacto. Migração **aditiva** (cria 3 tabelas, não toca palpites). Geração de `code` de convite. Verificar contra o Supabase real, limpar dados de teste. | S | ✅ |
+| **F2 — Backend escopado** | `PoolModule`: CRUD do bolão, **links de convite nomeados** (criar/listar/revogar), entrar por `code`, listar "meus bolões", gestão de membros (**promover/rebaixar admin, expulsar**) com a matriz de papéis. `RankingsService` aceita filtro de membros (via `poolId`). Guards por papel. `PredictionsService` intacto. | M | ✅ |
+| **F3 — Frontend** | "Meus bolões" vira a home/seção. Criar bolão / entrar por link / **gerir links nomeados** + **membros (promover/expulsar)**. Página do bolão = **ranking escopado aos membros** (partida + torneio); o palpitar **continua na página do torneio** (global). Roteamento `/b/:id`, join `/b/join/:code`. | M | ⏳ |
+| **F4 — Tempo real + polimento** | Ranking do bolão reativo via SSE (reusa as salas do torneio, filtra membros no cliente/servidor), vazios/erros, polimento. | S | ⏳ |
+
+### Endpoints da API (F2, todos sob `/api/pools`, exigem login)
+
+| Método + rota | O quê | Quem |
+|---|---|---|
+| `POST /pools` | criar bolão (`name`, `tournamentId`, `visibility?`) | logado |
+| `GET /pools/me` | meus bolões | logado |
+| `GET /pools/:id` | detalhe (membros; `invites` só p/ owner/admin) | membro |
+| `PATCH /pools/:id` | editar metadados | owner/admin |
+| `DELETE /pools/:id` | excluir (cascata) | owner |
+| `POST /pools/:id/transfer` | transferir posse (`userId`) | owner |
+| `POST /pools/:id/leave` | sair | membro ≠ owner |
+| `POST /pools/:id/invites` | criar link nomeado (`name`) → `code` | owner/admin |
+| `GET /pools/:id/invites` | listar links | owner/admin |
+| `PATCH /pools/:id/invites/:inviteId` | renomear/revogar (`isActive`) | owner/admin |
+| `GET /pools/join/:code` | preview do convite | logado |
+| `POST /pools/join/:code` | entrar (idempotente) | logado |
+| `PATCH /pools/:id/members/:userId` | promover/rebaixar (`role` ADMIN/MEMBER) | owner |
+| `DELETE /pools/:id/members/:userId` | expulsar | owner/admin |
+| `GET /pools/:id/ranking` | ranking do torneio escopado aos membros | membro |
+| `GET /pools/:id/matches/:matchId/ranking` | ranking da partida escopado | membro |
 
 ## Em aberto (resolver na fase que tocar)
 
