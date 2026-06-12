@@ -161,6 +161,7 @@ Criar um "bolão padrão" para os 7 amigos é **opcional** (eles podem criar pel
 > :matchId/predictions` com **trava de privacidade NO BACKEND** — antes do apito só retorna o palpite do
 > próprio solicitante (`revealed:false`), liberando os demais após o início; verificado por smoke.
 > **2ª rodada de ajustes (api `84e4600`, web `a5ea791`):** fix do bug da aba Jogos (`/matches` cap 100 → pagina), abas reordenadas Ranking-Jogos-Membros-Convites, e campo `Pool.description` (migração aditiva `20260612171432_pool_description`) visível no detalhe e na página do convite.
+> **3ª rodada (api `46ee9ae`, web `dff2439`):** aba Jogos redesenhada (lista cronológica por dia + escudos; clique abre `PoolMatchView` — aba escondida espelhando o ranking da partida do torneio, escopada aos membros, com a trava de privacidade). Descrição separada em `description` (interna) e `inviteDescription` (na página do convite; migração `pool_invite_description`).
 > **Milestone feature-completo; falta só o DEPLOY** (merge `feat/pools`→`main` nos 3 repos → API no VPS
 > + web na Vercel; migração já no banco).
 
