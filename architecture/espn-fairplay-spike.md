@@ -1,6 +1,7 @@
 # Spike: cartões da ESPN → desempate automático (fair play)
 
-**Data:** 2026-06-13 · **Status:** investigação concluída — viável, aguardando green-light p/ implementar.
+**Data:** 2026-06-13 · **Status:** ✅ **IMPLEMENTADO** (2026-06-13). Investigação confirmada viável e
+construída — schema, robô, `StandingsService` e `bestThirdLetter` já usam fair play. Ver "Implementação" no fim.
 
 ## Pergunta
 
@@ -58,20 +59,29 @@ amarelo quando ocorrer.)
 **Viável e barato.** Custo zero de chamadas extra à ESPN. A única peça que falta no nosso lado é
 **persistir cartões por time/partida** (o schema do `Match` não tem campo de cartão hoje).
 
-## Plano de implementação (quando aprovado)
+## Implementação (feita 2026-06-13)
 
-1. **Schema** — em `Match`: `homeYellow/homeRed/awayYellow/awayRed Int @default(0)` (cru, p/ exibir)
-   e `homeFairPlay/awayFairPlay Int @default(0)` (pontos FIFA já computados no ingest). Migração
-   aditiva, segura no Supabase compartilhado.
-2. **Robô `live-ingest`** — ao reconciliar um match, varrer `competition.details[]`, agrupar por
-   `athletesInvolved[].id`, derivar amarelos/vermelhos e os pontos de fair play (lógica do achado 3)
-   e gravar nos campos. Roda no mesmo tick; idempotente.
-3. **`StandingsService`** — novo `Criterion` `FAIR_PLAY` nos `PRESET_CRITERIA` (FIFA já o inclui,
-   após gols pró e antes do nome; `BRASILEIRAO` já o cita no comentário do preset).
-4. **`slot-resolver` / `bestThirdLetter`** — inserir fair play no `sort` dos terceiros
-   (`pontos → saldo → gols → **fair play** → nome`), substituindo o desempate por nome/override.
-5. **Override admin permanece** p/ os casos que a ESPN não desambigua (amarelo+vermelho-direto = −5;
-   ranking-FIFA como critério 5). Atualizar Decisão #19.
+1. **Schema** — `Match` ganhou `homeYellow/homeRed/awayYellow/awayRed` (cru, p/ exibir) e
+   `homeFairPlay/awayFairPlay` (pontos FIFA, ≤ 0), todos `Int @default(0)`. Migração aditiva
+   `20260613060000_match_cards_fairplay` (NOT NULL default 0 → segura p/ linhas e código antigos),
+   aplicada no dev via `migrate deploy`.
+2. **`EspnService`** — `parseDiscipline()` varre `competition.details[]`, mapeia `team.id`→sigla pelos
+   competidores, agrupa por `athletesInvolved[].id` e soma `playerFairPlay(amarelos, vermelhos)` por time
+   (amarelo simples −1, 2ª advertência/`Y+R` mesmo jogador −3, vermelho direto −4). Ambos exportados e
+   testados (incl. fixture do RSA@MEX real → MEX −5, RSA −10).
+3. **`LiveIngestService`** — no mesmo tick que já lê o scoreboard, grava cartões+fair play (chaveado por
+   `espnAbbr`) quando o jogo está `in`/`post`. Sem chamada extra; idempotente (só escreve no que mudou).
+4. **`StandingsService`** — `Criterion FAIR_PLAY` adicionado ao fim de **todos** os presets (lugar correto:
+   após overall+H2H, antes do sorteio/nome); o `StandingsRow` agora expõe `yellowCards/redCards/fairPlay`.
+5. **`bestThirdLetter`** — ranqueia os 12 terceiros por `pontos → saldo → gols → **fair play** → nome`,
+   alimentado pelo `row.fairPlay`.
+6. **Override admin permanece** p/ o que a ESPN não desambigua (amarelo + vermelho **direto** = −5) e o
+   critério final (ranking-FIFA / sorteio).
+
+**Verificado e2e (2026-06-13):** feed ao vivo da ESPN (4 jogos da Copa) → `parseDiscipline` → gravado no
+Supabase de dev → `GET /seasons/:id/standings` expõe os cartões; e o **desempate reordenou de verdade**
+(Grupo B: Canadá `fair −2` ficou à frente da Bósnia `fair −3`, empatados em tudo e contra a ordem
+alfabética). Dados de teste **limpos depois** (zerados). 42 testes passam.
 
 ## Limites
 

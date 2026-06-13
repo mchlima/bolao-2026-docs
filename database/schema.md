@@ -73,6 +73,10 @@ canônico vive em `bolao-2026-api/prisma/schema.prisma`; este documento descreve
 - `status: MatchStatus` (`SCHEDULED`/`LIVE`/`FINISHED`/`CANCELLED`)
 - `homeScore`, `awayScore` (default 0). **Mata-mata:** `homePenalties?`, `awayPenalties?`,
   `winner? (MatchWinner)`, `duration? (MatchDuration: REGULAR/EXTRA_TIME/PENALTY_SHOOTOUT)`.
+- **Disciplina (cartões), default 0:** `homeYellow`/`homeRed`/`awayYellow`/`awayRed` (cru, p/ exibir) e
+  `homeFairPlay`/`awayFairPlay` (pontos de fair play FIFA, ≤ 0 — desempate). Gravados pelo robô ESPN no
+  ingest (sem chamada extra). Alimentam o desempate de classificação e o ranking dos 3º colocados. Ver
+  `architecture/espn-fairplay-spike.md`.
 - `phaseLabel?`, `groupName?` ("A".."L"), `matchNumber?` (nº oficial 1..N) — texto livre mantido p/
   back-compat/display; a estrutura formal agora vive nos FKs acima.
 - **`@@unique([seasonId, matchNumber])`** — seed idempotente de partidas.
