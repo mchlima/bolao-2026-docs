@@ -5,13 +5,18 @@ usuário retomar. Quando uma virar trabalho ativo, mover o detalhe para os contr
 
 | # | Item | Valor | Esforço / risco | Gatilho (quando fazer) |
 |---|---|---|---|---|
-| R1 | **Multi-torneio via `espnLeagueSlug`** | Alto | Pequeno / baixo | Ao querer qualquer torneio além da Copa |
+| ~~R1~~ | **Multi-torneio via `espnLeagueSlug`** — ✅ **ABSORVIDO** (2026-06-13, milestone de estrutura) | Alto | — | Feito |
 | R2 | **Mercados extras de palpite** | Alto | Grande / médio-alto | Milestone novo, próximo torneio |
 | R3 | **Desempate do ranking por mérito** | Médio | Pequeno / baixo | Início de um torneio novo |
 
 ---
 
-## R1 — Multi-torneio via `espnLeagueSlug`
+## R1 — Multi-torneio via `espnLeagueSlug` — ✅ ABSORVIDO (2026-06-13)
+
+> **Feito no milestone de estrutura de competições.** O `espnLeagueSlug` agora vive na entidade
+> `Competition`; `EspnService.fetchScoreboard(slug)` monta a URL por liga e o `LiveIngestService`
+> agrupa os jogos em janela por slug da competição. Um motor serve qualquer torneio. Ver DECISIONS #19.
+> _(Texto original abaixo, mantido como histórico.)_
 
 O app já é multi-torneio, mas o robô de tempo real (`live-ingest`) está **hardcoded na Copa do
 Mundo** — `SCOREBOARD_URL = .../soccer/fifa.world/scoreboard` (`espn.service.ts:15`).
