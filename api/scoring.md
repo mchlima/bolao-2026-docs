@@ -1,50 +1,75 @@
 # Regra de pontuação — Bolão 2026
 
 Calculada **somente sobre o palpite de placar** (`Prediction` home/away) versus o **resultado**
-da `Match`. **Modelo B (proximidade):** acertar o vencedor é o portão; a partir dele os pontos
-crescem com a proximidade de cada placar.
+da `Match`. **Modelo granular de mercado (estilo "dacopa"):** acertar o vencedor/empate é o portão;
+dentro dele, quanto mais preciso o palpite, mais pontos — com o **saldo de gols** como critério,
+igual aos bolões tradicionais (BR e mundo).
 
-> **Centralizar** num único `ScoringService`. Três visões consomem dela e **não podem divergir**:
+> **Centralizar** num único `ScoringService`. Três visões consomem dele e **não podem divergir**:
 > ranking do torneio (acumulado), ranking da partida (por jogo, provisório no LIVE) e o
 > "engajamento do bolão" (agregação no admin). **Uma fonte só.**
 
 ## Fórmula
 
 ```
-errou o vencedor (sinal do saldo diferente):
-  cravou os gols de um time → TEAM_EXACT_MISS  (consolação fora do portão)
-  senão                     → 0
-acertou o vencedor/empate                    → BASE
-  + por time:  gols exatos → TEAM_EXACT
-               errou por 1 → TEAM_NEAR
-               senão       → 0
+errou o vencedor/empate (sinal do saldo diferente) → NONE          (0)
+acertou o vencedor/empate:
+  placar exato                                      → EXACT         (cravou)
+  + gols do vencedor exatos                         → WINNER_GOALS
+  + saldo de gols igual                             → GOAL_DIFF
+  + gols do perdedor exatos                         → LOSER_GOALS
+  nada além do vencedor/empate                      → OUTCOME
 ```
 
-Padrões (parametrizáveis via env): **BASE = 4**, **TEAM_EXACT = 3**, **TEAM_NEAR = 1**,
-**TEAM_EXACT_MISS = 1** (`SCORING_BASE` / `SCORING_TEAM_EXACT` / `SCORING_TEAM_NEAR` /
-`SCORING_TEAM_EXACT_MISS`). Com eles, cravar o placar = **10**.
+Prioridade (de cima pra baixo): `EXACT > WINNER_GOALS > GOAL_DIFF > LOSER_GOALS > OUTCOME`.
+**Empate não tem vencedor/perdedor**, então um empate certo com placar diferente é sempre `OUTCOME`.
 
-**Consolação (Decisão #18, 2026-06-12):** errar o vencedor mas **cravar o número de gols de um
-time** rende **1 ponto** — só o número *exato* conta (errar por 1 fora do portão = 0). Fica
-**estritamente abaixo da BASE**, então acertar o vencedor sempre vale mais do que a consolação.
-Como cravar os dois times = placar exato (= acertar o vencedor), fora do portão no máximo um time
-casa.
+Padrões (parametrizáveis via env): **EXACT = 25**, **WINNER_GOALS = 18**, **GOAL_DIFF = 15**,
+**LOSER_GOALS = 12**, **OUTCOME = 10** (`SCORING_EXACT` / `SCORING_WINNER_GOALS` /
+`SCORING_GOAL_DIFF` / `SCORING_LOSER_GOALS` / `SCORING_OUTCOME`).
 
 ### Faixas e rótulo (`tier`, p/ UI)
 
 | `tier` | Rótulo | Condição | Pontos (padrão) |
 |---|---|---|---|
-| `EXACT` | Cravou | placar exato | **10** |
-| `ONE_TEAM_SCORE` | Acertou um placar | vencedor certo + cravou os gols de um time | **7–8** |
-| `CLOSE` | Quase | vencedor certo, nenhum time cravado, cada um errou por ≤1 | **6** |
-| `OUTCOME` | Acertou o vencedor | vencedor certo, placar mais distante | **4–5** |
-| `TEAM_GOALS` | Gols de um time | **errou o vencedor**, mas cravou os gols de um time | **1** |
-| `NONE` | Não pontuou | errou o vencedor e não cravou nenhum time | **0** |
+| `EXACT` | Cravou | placar exato | **25** |
+| `WINNER_GOALS` | Gols do vencedor | vencedor certo + gols do vencedor exatos | **18** |
+| `GOAL_DIFF` | Acertou o saldo | vencedor certo + saldo de gols igual | **15** |
+| `LOSER_GOALS` | Gols do perdedor | vencedor certo + gols do perdedor exatos | **12** |
+| `OUTCOME` | Acertou o vencedor | só o vencedor/empate | **10** |
+| `NONE` | Não pontuou | errou o vencedor/empate | **0** |
 
-O `tier` é só um **rótulo** derivado dos mesmos fatos; os pontos vêm da fórmula acima.
+Exemplos (resultado **2 × 1**): `2-1`→25 · `2-0`→18 · `3-2`→15 · `3-1`→12 · `4-2`→10 ·
+`0-2`→0 · `1-1`→0. Empate **2 × 2**: `2-2`→25 · `1-1`→10 · `3-1`→0.
 
-Exemplos (resultado **2 × 1**): `2-1`→10 · `2-0`→8 · `3-1`→8 · `3-2`→6 · `1-0`→6 ·
-`5-0`→5 · `5-3`→4 · `2-3`→1 · `0-0`→0 · `1-2`→0.
+## Peso por fase (mata-mata)
+
+Partidas de mata-mata valem mais, de forma **progressiva com teto** e **adaptativa ao bracket**
+(sem nomes de fase hardcoded — funciona pra Copa que começa nos 16-avos, nas oitavas, etc.):
+
+```
+weight = min(1 + profundidade * PHASE_STEP, PHASE_CAP)
+```
+
+`profundidade` = posição 1-based da rodada dentro dos stages `KNOCKOUT` da temporada (fase de
+grupos/liga = profundidade 0 → peso 1). `PHASE_STEP` = quanto cada rodada adiciona (+1/+2/…);
+`PHASE_CAP` = teto do multiplicador (`0` = sem teto, progressão pura).
+
+Com o padrão (`SCORING_PHASE_STEP = 1`, `SCORING_PHASE_CAP = 3`), na Copa 2026:
+
+| Fase | Profundidade | Peso |
+|---|---|---|
+| Fase de grupos | 0 | 1× |
+| 16-avos | 1 | 2× |
+| Oitavas | 2 | 3× |
+| Quartas | 3 | 3× (teto) |
+| Semifinais | 4 | 3× (teto) |
+| Final / 3º lugar | 5 | 3× (teto) |
+
+**"Dobrar fixo no mata-mata"** = `PHASE_STEP = 1` + `PHASE_CAP = 2` (toda rodada eliminatória → 2×).
+`PHASE_STEP = 0` (ou `PHASE_CAP = 1`) desliga o peso. O `tier` **não** muda com o peso; só os
+pontos são multiplicados. Aplicado ao acumular nos rankings e na visão de palpites
+(`PhaseWeightService.byRound`).
 
 ## Desempate
 
@@ -68,24 +93,24 @@ desempate resolve.
 
 ```ts
 function tierFor(pred, result): ScoreTier {
+  const po = Math.sign(pred.home - pred.away), ro = Math.sign(result.home - result.away);
+  if (po !== ro) return 'NONE';                                  // errou o vencedor/empate
   if (pred.home === result.home && pred.away === result.away) return 'EXACT';
-  if (Math.sign(pred.home - pred.away) !== Math.sign(result.home - result.away))
-    return (pred.home === result.home || pred.away === result.away) ? 'TEAM_GOALS' : 'NONE';
-  const dh = Math.abs(pred.home - result.home), da = Math.abs(pred.away - result.away);
-  if (dh === 0 || da === 0) return 'ONE_TEAM_SCORE';
-  if (dh <= 1 && da <= 1) return 'CLOSE';
+  if (ro === 0) return 'OUTCOME';                                // empate certo, placar diferente
+  const predWin = po > 0 ? pred.home : pred.away;
+  const predLose = po > 0 ? pred.away : pred.home;
+  const resWin = ro > 0 ? result.home : result.away;
+  const resLose = ro > 0 ? result.away : result.home;
+  if (predWin === resWin) return 'WINNER_GOALS';
+  if (pred.home - pred.away === result.home - result.away) return 'GOAL_DIFF';
+  if (predLose === resLose) return 'LOSER_GOALS';
   return 'OUTCOME';
 }
 
-function score(pred, result) {
+function score(pred, result, weight = 1) {
   const tier = tierFor(pred, result);
-  if (tier === 'NONE') return { tier, points: 0 };
-  if (tier === 'TEAM_GOALS') {                       // errou o vencedor, cravou um time
-    const exacts = (pred.home === result.home) + (pred.away === result.away);
-    return { tier, points: exacts * TEAM_EXACT_MISS };
-  }
-  const per = (d) => d === 0 ? TEAM_EXACT : d === 1 ? TEAM_NEAR : 0;
-  return { tier, points: BASE + per(|pred.home-result.home|) + per(|pred.away-result.away|) };
+  const base = tier === 'NONE' ? 0 : POINTS[tier];   // EXACT 25 / WINNER_GOALS 18 / ...
+  return { tier, points: base * weight };            // weight = phaseWeight(profundidade)
 }
 ```
 
